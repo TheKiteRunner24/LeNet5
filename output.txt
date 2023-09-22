@@ -1,0 +1,5 @@
+execve("./lenet", ["./lenet"], 0x7ffe89d40a70 /* 33 vars */) = 0
+arch_prctl(0x3001 /* ARCH_??? */, 0x7ffe47278ce0) = -1 EINVAL (Invalid argument)
+arch_prctl(ARCH_SET_FS, 0x7f78cfa3c740) = 0
+exit_group(0)                           = ?
++++ exited with 0 +++

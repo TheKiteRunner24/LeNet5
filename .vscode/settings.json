@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "forward_func.h": "c",
+        "lenet.h": "c",
+        "time.h": "c",
+        "array": "c",
+        "random": "c",
+        "limits": "c",
+        "algorithm": "c"
+    }
+}

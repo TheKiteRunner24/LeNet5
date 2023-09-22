@@ -1,8 +1,12 @@
-#include "lenet.h"
 #include <memory.h>
 #include <time.h>
 #include <stdlib.h>
 #include <math.h>
+#include "lenet.h"
+#include "forward_func.h"
+
+#include "lenet_forward.h"
+
 
 #define GETLENGTH(array) (sizeof(array)/sizeof(*(array)))
 
@@ -167,6 +171,7 @@ static inline void load_input(Feature *features, image input)
 	}
 }
 
+
 static inline void softmax(double input[OUTPUT], double loss[OUTPUT], int label, int count)
 {
 	double inner = 0;
@@ -211,6 +216,7 @@ static uint8 get_result(Feature *features, uint8 count)
 	return result;
 }
 
+
 static double f64rand()
 {
 	static int randbit = 0;
@@ -228,6 +234,20 @@ static double f64rand()
 }
 
 
+// void Train(LeNet5 *lenet, image input, uint8 label)
+// {
+// 	Feature features = { 0 };
+// 	Feature errors = { 0 };
+// 	LeNet5 deltas = { 0 };
+// 	load_input(&features, input);
+// 	forward(lenet, &features, relu);
+// 	load_target(&features, &errors, label);
+// 	backward(lenet, &deltas, &errors, &features, relugrad);
+// 	FOREACH(i, GETCOUNT(LeNet5))
+// 		((double *)lenet)[i] += ALPHA * ((double *)&deltas)[i];
+// }
+
+
 void TrainBatch(LeNet5 *lenet, image *inputs, uint8 *labels, int batchSize)
 {
 	double buffer[GETCOUNT(LeNet5)] = { 0 };
@@ -239,7 +259,10 @@ void TrainBatch(LeNet5 *lenet, image *inputs, uint8 *labels, int batchSize)
 		Feature errors = { 0 };
 		LeNet5	deltas = { 0 };
 		load_input(&features, inputs[i]);
-		forward(lenet, &features, relu);
+
+		//forward(lenet, &features, relu);
+		forward_func(lenet, &features);
+
 		load_target(&features, &errors, labels[i]);
 		backward(lenet, &deltas, &errors, &features, relugrad);
 		#pragma omp critical
@@ -253,26 +276,17 @@ void TrainBatch(LeNet5 *lenet, image *inputs, uint8 *labels, int batchSize)
 		((double *)lenet)[i] += k * buffer[i];
 }
 
-void Train(LeNet5 *lenet, image input, uint8 label)
-{
-	Feature features = { 0 };
-	Feature errors = { 0 };
-	LeNet5 deltas = { 0 };
-	load_input(&features, input);
-	forward(lenet, &features, relu);
-	load_target(&features, &errors, label);
-	backward(lenet, &deltas, &errors, &features, relugrad);
-	FOREACH(i, GETCOUNT(LeNet5))
-		((double *)lenet)[i] += ALPHA * ((double *)&deltas)[i];
-}
 
-uint8 Predict(LeNet5 *lenet, image input,uint8 count)
+uint8 Predict(LeNet5 *lenet, image input, uint8 count)
 {
 	Feature features = { 0 };
 	load_input(&features, input);
-	forward(lenet, &features, relu);
+	//forward(lenet, &features, relu);
+	forward_func(lenet, &features);
 	return get_result(&features, count);
 }
+
+
 
 void Initial(LeNet5 *lenet)
 {
@@ -282,4 +296,50 @@ void Initial(LeNet5 *lenet)
 	for (double *pos = (double *)lenet->weight4_5; pos < (double *)lenet->weight5_6; *pos++ *= sqrt(6.0 / (LENGTH_KERNEL * LENGTH_KERNEL * (LAYER4 + LAYER5))));
 	for (double *pos = (double *)lenet->weight5_6; pos < (double *)lenet->bias0_1; *pos++ *= sqrt(6.0 / (LAYER5 + OUTPUT)));
 	for (int *pos = (int *)lenet->bias0_1; pos < (int *)(lenet + 1); *pos++ = 0);
+}
+
+
+static inline void load_input_quantized(Feature_quantized *features_q, image input)
+{
+	double (*layer0)[LENGTH_FEATURE0][LENGTH_FEATURE0] = features_q->input;
+	const long sz = sizeof(image) / sizeof(**input);
+	double mean = 0, std = 0;
+	FOREACH(j, sizeof(image) / sizeof(*input))
+		FOREACH(k, sizeof(*input) / sizeof(**input))
+	{
+		mean += input[j][k];
+		std += input[j][k] * input[j][k];
+	}
+	mean /= sz;
+	std = sqrt(std / sz - mean*mean);
+	FOREACH(j, sizeof(image) / sizeof(*input))
+		FOREACH(k, sizeof(*input) / sizeof(**input))
+	{
+		layer0[0][j + PADDING][k + PADDING] = (input[j][k] - mean) / std;
+	}
+}
+
+
+static uint8 get_result_quantized(Feature_quantized *features_q, uint8 count)
+{
+	double *output = (double *)features_q->output_f; 
+	uint8 result = 0;
+	double maxvalue = *output;
+	for (uint8 i = 1; i < count; ++i)
+	{
+		if (output[i] > maxvalue)
+		{
+			maxvalue = output[i];
+			result = i;
+		}
+	}
+	return result;
+}
+
+uint8 Predict_quantized(LeNet5_quantized *lenet_q, image input, uint8 count)
+{
+	Feature_quantized features_q = { 0 };
+	load_input_quantized(&features_q, input);
+	lenet_forward(lenet_q, &features_q);
+	return get_result_quantized(&features_q, count);
 }

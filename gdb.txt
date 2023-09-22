@@ -1,0 +1,34 @@
+[Inferior 1 (process 38995) exited normally]
+The program is not being run.
+No frame selected.
+Breakpoint 1 at 0x4c2a: file main.c, line 108.
+Starting program: /home/hsp/work/LeNet5/lenet 
+
+Breakpoint 1, main () at main.c:108
+108	{
+Dump of assembler code for function main:
+=> 0x0000555555558c2a <+0>:	endbr64 
+   0x0000555555558c2e <+4>:	push   %rbp
+   0x0000555555558c2f <+5>:	mov    %rsp,%rbp
+   0x0000555555558c32 <+8>:	mov    $0x0,%eax
+   0x0000555555558c37 <+13>:	callq  0x555555558b00 <test_only>
+   0x0000555555558c3c <+18>:	mov    $0x0,%eax
+   0x0000555555558c41 <+23>:	pop    %rbp
+   0x0000555555558c42 <+24>:	retq   
+End of assembler dump.
+Dump of assembler code for function main:
+=> 0x0000555555558c2a <+0>:	endbr64 
+   0x0000555555558c2e <+4>:	push   %rbp
+   0x0000555555558c2f <+5>:	mov    %rsp,%rbp
+   0x0000555555558c32 <+8>:	mov    $0x0,%eax
+   0x0000555555558c37 <+13>:	callq  0x555555558b00 <test_only>
+   0x0000555555558c3c <+18>:	mov    $0x0,%eax
+   0x0000555555558c41 <+23>:	pop    %rbp
+   0x0000555555558c42 <+24>:	retq   
+End of assembler dump.
+Continuing.
+
+Program received signal SIGINT, Interrupt.
+0x0000555555555b3c in forward (lenet=0x7ffff7496010, features=0x7ffffffec5f0, action=0x5555555553c9 <relu>)
+    at lenet.c:135
+135		CONVOLUTION_FORWARD(features->layer2, features->layer3, lenet->weight2_3, lenet->bias2_3, action);
